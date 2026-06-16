@@ -25,6 +25,7 @@ class Plan extends Model
         'max_groups',
         'max_members_per_group',
         'is_active',
+        'stripe_price_id',
     ];
 
     protected $casts = [
