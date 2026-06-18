@@ -1,9 +1,19 @@
 <?php
 
-use Laravel\Cashier\Console\WebhookCommand;
 use Laravel\Cashier\Invoices\DompdfInvoiceRenderer;
 
 // use Laravel\Cashier\Invoices\LaravelPdfInvoiceRenderer;
+
+$defaultWebhookEvents = [
+    'customer.subscription.created',
+    'customer.subscription.updated',
+    'customer.subscription.deleted',
+    'customer.updated',
+    'customer.deleted',
+    'payment_method.automatically_updated',
+    'invoice.payment_action_required',
+    'invoice.payment_succeeded',
+];
 
 return [
 
@@ -49,7 +59,9 @@ return [
     'webhook' => [
         'secret' => env('STRIPE_WEBHOOK_SECRET'),
         'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
-        'events' => WebhookCommand::DEFAULT_EVENTS,
+        'events' => env('CASHIER_WEBHOOK_EVENTS')
+            ? array_map('trim', explode(',', env('CASHIER_WEBHOOK_EVENTS')))
+            : $defaultWebhookEvents,
     ],
 
     /*
@@ -125,6 +137,6 @@ return [
     |
     */
 
-    'logger' => env('CASHIER_LOGGER'),
+    'logger' => env('CASHIER_LOGGER') ?: null,
 
 ];

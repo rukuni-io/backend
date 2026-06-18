@@ -18,7 +18,8 @@ return [
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    // Fallback to stack when LOG_CHANNEL is unset or empty.
+    'default' => env('LOG_CHANNEL') ?: 'stack',
 
     /*
     |--------------------------------------------------------------------------
