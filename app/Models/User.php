@@ -20,7 +20,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     use SoftDeletes;
     use HasRoles;
     use HasUuids;
-use Laravel\Cashier\Billable;
+    use Laravel\Cashier\Billable;
+
+    protected $fillable = [
+        'name',
+        'email',
         'password',
         'mobile',
         'email_verified_at',
