@@ -36,11 +36,14 @@ class StripeController extends Controller
             Log::error('Stripe setup intent error', [
                 'user_id' => $user?->id,
                 'error' => $e->getMessage(),
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unable to create setup intent.',
+                'debug' => env('APP_DEBUG') ? $e->getMessage() : null,
             ], 500);
         }
     }
