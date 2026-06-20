@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Plan;
+use App\Services\BillingEntitlementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
 class UserPlanController extends Controller
 {
+    public function __construct(protected BillingEntitlementService $entitlements) {}
+
     /**
      * Get the authenticated user's active plan.
      */
@@ -43,18 +46,7 @@ class UserPlanController extends Controller
             return response()->json(['message' => 'Paid plans must be activated by an administrator.'], 403);
         }
 
-        // Cancel any existing active plan
-        $user->userPlans()->where('status', 'active')->update(['status' => 'cancelled']);
-
-        $userPlan = $user->userPlans()->create([
-            'plan_id'    => $plan->id,
-            'started_at' => now(),
-            'expires_at' => null,
-            'status'     => 'active',
-        ]);
-
-        // Sync the corresponding Spatie role
-        $user->syncRoles([$plan->slug]);
+        $userPlan = $this->entitlements->activatePlan($user, $plan);
 
         return response()->json([
             'message' => 'You have joined the ' . $plan->name . ' plan.',

@@ -8,6 +8,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\StripeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserPlanController;
 use Illuminate\Http\Request;
@@ -101,6 +102,17 @@ Route::prefix('user')->middleware(['auth:api'])->group(function () {
     Route::get('/points', [UserController::class, 'pointsSummary']);
     Route::post('/points/redeem', [UserController::class, 'redeemPoints']);
     Route::post('/push-token', [UserController::class, 'updatePushToken']);
+
+    /**
+     * Billing Routes (authenticated user)
+     * Prefix: /user/billing
+     */
+    Route::prefix('billing')->group(function () {
+        Route::get('/setup-intent', [StripeController::class, 'createSetupIntent']);
+        Route::post('/subscribe', [StripeController::class, 'createSubscription']);
+        Route::get('/subscription', [StripeController::class, 'subscriptionStatus']);
+        Route::post('/cancel', [StripeController::class, 'cancelSubscription']);
+    });
 
     /**
      * Referral Routes Group

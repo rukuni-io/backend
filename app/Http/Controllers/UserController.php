@@ -7,7 +7,6 @@ use App\Models\Contribution;
 use App\Models\Group;
 use App\Models\Plan;
 use App\Models\User;
-use App\Models\UserPlan;
 use App\Notifications\AccountUpdatedNotification;
 use App\Notifications\LoginNotification;
 use App\Notifications\PasswordChangedNotification;
@@ -17,10 +16,10 @@ use App\Notifications\ReferralSignupNotification;
 use App\Notifications\UserOnboardingNotification;
 use App\Notifications\VerifyEmailNotification;
 use App\Services\NotificationService;
+use App\Services\BillingEntitlementService;
 use App\Services\PointsService;
 use App\Services\ReferralService;
 use Exception;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +33,8 @@ use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
+    public function __construct(protected BillingEntitlementService $entitlements) {}
+
     /**
      * Register a new user.
      *
@@ -1370,26 +1371,24 @@ class UserController extends Controller
 
             $plan = Plan::find($validatedData['plan_id']);
 
+            if ($plan->billing !== 'free_forever') {
+                return response()->json([
+                    'status' => 'error',
+                    'error' => 'Paid plans must be activated through billing.',
+                    'code' => 'STRIPE_BILLING_REQUIRED',
+                ], 422);
+            }
+
             // Cancel any existing active plan (upgrade flow)
-            $user->userPlans()->where('status', 'active')->update([
-                'status'     => 'cancelled',
-                'expires_at' => now(),
-            ]);
-
-            // Create user plan
-            UserPlan::create([
-                'user_id'    => $user->id,
-                'plan_id'    => $plan->id,
-                'status'     => 'active',
-                'started_at' => now(),
-                'expires_at' => match ($plan->billing) {
-                    'monthly'      => now()->addMonth(),
-                    'yearly'       => now()->addYear(),
-                    default        => null, // free_forever
-                },
-            ]);
-
-            $user->syncRoles([$plan->slug]);
+                $this->entitlements->activatePlan(
+                    $user,
+                    $plan,
+                    match ($plan->billing) {
+                        'monthly'      => now()->addMonth(),
+                        'yearly'       => now()->addYear(),
+                        default        => null,
+                    }
+                );
 
             NotificationService::send($user, new PlanActivatedNotification($user->name, $plan->name));
 
@@ -1400,7 +1399,7 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => "You've successfully subscribed to the {$plan->name} plan",
+                'message' => "You've successfully joined the {$plan->name} plan",
                 'data' => [
                     'plan_name' => $plan->name,
                     'plan_slug' => $plan->slug,
