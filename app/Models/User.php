@@ -13,6 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Laravel\Cashier\Billable;
 
 class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 {
@@ -20,7 +21,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     use SoftDeletes;
     use HasRoles;
     use HasUuids;
-    use Laravel\Cashier\Billable;
+    use Billable;
 
     protected $fillable = [
         'name',
